@@ -54,6 +54,10 @@ if [ ! -x "$NODE_DIR/bin/node" ]; then
 fi
 PATH="$NODE_DIR/bin:$PATH"
 export PATH
+# Older bundled corepack ships stale signing keys; skip the check and prefer the
+# pinned package manager (see install.sh) so the pnpm download does not fail.
+export COREPACK_INTEGRITY_KEYS=0
+export COREPACK_DEFAULT_TO_LATEST=0
 corepack enable >/dev/null 2>&1 || true
 
 # 3) Download and extract the app tarball.
