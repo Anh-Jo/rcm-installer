@@ -14,7 +14,9 @@ set -eu
 
 RCM_TARBALL_URL="${RCM_TARBALL_URL:-https://github.com/Anh-Jo/rcm-installer/releases/latest/download/rcm.tar.gz}"
 RCM_DIR="${RCM_DIR:-$HOME/rcm}"
-NODE_VERSION="${NODE_VERSION:-22.11.0}"
+# Node >= 22.12 is required: Prisma 7 tooling require()s an ESM module, which
+# only works with the unflagged require(esm) landed in 22.12.
+NODE_VERSION="${NODE_VERSION:-22.23.2}"
 NODE_DIR="$HOME/.local/share/rcm/node"
 
 say() { printf '\033[1;36m==>\033[0m %s\n' "$*"; }
@@ -39,7 +41,9 @@ if [ "$need" -eq 1 ]; then
 fi
 
 # 2) Local Node (cached in $NODE_DIR; no root). corepack provides pnpm.
-if [ ! -x "$NODE_DIR/bin/node" ]; then
+node_current=""
+[ -x "$NODE_DIR/bin/node" ] && node_current="$("$NODE_DIR/bin/node" --version 2>/dev/null | sed 's/^v//')"
+if [ "$node_current" != "$NODE_VERSION" ]; then
   case "$(uname -m)" in
     x86_64) narch=x64 ;;
     aarch64 | arm64) narch=arm64 ;;
@@ -48,6 +52,7 @@ if [ ! -x "$NODE_DIR/bin/node" ]; then
   say "Installing Node $NODE_VERSION (local, no root)"
   node_tar="$(mktemp)"
   curl -fsSL "https://nodejs.org/dist/v$NODE_VERSION/node-v$NODE_VERSION-linux-$narch.tar.xz" -o "$node_tar"
+  rm -rf "$NODE_DIR"
   mkdir -p "$NODE_DIR"
   tar -xJf "$node_tar" -C "$NODE_DIR" --strip-components=1
   rm -f "$node_tar"
